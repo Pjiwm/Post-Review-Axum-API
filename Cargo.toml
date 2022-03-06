@@ -1,0 +1,21 @@
+[package]
+name = "axum-test"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axum = "0.4.8"
+hyper = {version = "0.14.17", features = ["full"]}
+tokio = {version = "1.17.0", features = ["full"]}
+tower = {version = "0.4.12", features = ["full"]}
+serde_json = "1.0.79"
+serde = "1.0.136"
+serde_derive = "1.0.136"
+# tower-http = "0.2.3"
+# tokio-stream = "0.1.8"
+# async-session = "3.0.0"
+# http = "0.2.6"
+# chrono = "0.4.19"
+# rand = "0.8.5"
