@@ -35,6 +35,7 @@ pub fn remove_by_id(id: u64) {
         for (i, index) in VALUES.iter().enumerate() {
             if index.id == id {
                 VALUES.remove(i);
+                return;
             }
         }
     }
