@@ -5,10 +5,10 @@ mod db;
 mod models;
 mod router;
 mod utils;
-
+mod mongo;
 #[tokio::main]
 async fn main() {
-    // run server
+    // db_connect::connect();
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
         .serve(app().into_make_service())
         .await

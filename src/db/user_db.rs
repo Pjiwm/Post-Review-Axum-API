@@ -19,7 +19,7 @@ pub fn get() -> Vec<models::User> {
     }
 }
 
-pub fn get_by_id(id: u64) -> Option<models::User> {
+pub fn get_by_id(id: i64) -> Option<models::User> {
     unsafe {
         for index in VALUES.iter() {
             if index.id == id {
@@ -30,7 +30,7 @@ pub fn get_by_id(id: u64) -> Option<models::User> {
     }
 }
 
-pub fn remove_by_id(id: u64) {
+pub fn remove_by_id(id: i64) {
     unsafe {
         for (i, index) in VALUES.iter().enumerate() {
             if index.id == id {
@@ -41,7 +41,7 @@ pub fn remove_by_id(id: u64) {
     }
 }
 
-pub fn update(user: models::User, id: u64) -> bool {
+pub fn update(user: models::User, id: i64) -> bool {
     unsafe {
         for (i, index) in VALUES.iter().enumerate() {
             if index.id == id {
