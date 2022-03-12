@@ -13,9 +13,7 @@ tower = {version = "0.4.12", features = ["full"]}
 serde_json = "1.0.79"
 serde = "1.0.136"
 serde_derive = "1.0.136"
-# tower-http = "0.2.3"
-# tokio-stream = "0.1.8"
-# async-session = "3.0.0"
-# http = "0.2.6"
-# chrono = "0.4.19"
-# rand = "0.8.5"
+[dependencies.mongodb]
+version = "2.1.0"
+default-features = false
+features = ["async-std-runtime"]

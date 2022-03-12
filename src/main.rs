@@ -1,5 +1,4 @@
 use axum::Router;
-
 // our modules
 mod controllers;
 mod db;

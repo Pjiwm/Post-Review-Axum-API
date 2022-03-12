@@ -1,0 +1,21 @@
+# verion: "3.8"
+services:
+  rust:
+    container_name: axum_rust
+    ports:
+      - 3000:8080
+    tty: true
+    build: .
+    volumes:
+      - ./data/rust:/data/rust
+    env_file:
+      - .env
+    environment:
+      DB_CONNECTION: ${DB_CONNECTION}
+  mongo:
+    container_name: axum_mongo
+    image: mongo
+    ports:
+      - 27017:27017
+    volumes:
+      - ./data/mongo:/data/mongo
