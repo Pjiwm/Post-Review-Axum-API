@@ -1,15 +1,14 @@
+use std::vec::Vec;
+use std::collections::HashMap;
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Json};
-use mongodb::bson::{Bson, Document};
 use serde_json::{json, Value};
-use std::collections::HashMap;
-use std::vec::Vec;
+use mongodb::bson::Document;
 use mongodb::{
     bson::doc,
 };
 use futures::stream::TryStreamExt;
-use crate::db::user_db;
 use crate::models;
 use crate::utils::validators;
 use crate::utils::Types;
@@ -60,25 +59,26 @@ pub async fn update(Path(id): Path<i64>, Json(payload): Json<Value>) -> impl Int
         }
     }
     let changes = doc!{"$set": changes_doc};
-    let result = users_coll().await.update_one(filter,changes.clone(), None).await.ok();
+    let result = users_coll().await.update_one(filter,changes, None).await.ok();
     // The result contains the value matchedCount which shows how many values got changed, 
     // by changing this type to JSON we can check if the value is higher than 0, otherwise it's a 404.
     let result_as_json = Json(serde_json::to_value(&result).unwrap());
     if result_as_json["matchedCount"].as_i64().unwrap() == 0 {
         return (StatusCode::NOT_FOUND, Json(json!({"status": "not_found"})))
     }
-    return (StatusCode::OK, Json(json!(result)))
+    return (StatusCode::OK, Json(json!({"status": result})))
 }
 
 pub async fn remove(Path(id): Path<i64>) -> impl IntoResponse {
-    let user = user_db::get_by_id(id);
-    match &user {
-        None => return (StatusCode::NOT_FOUND, Json(json!({"status": "not_found"}))),
-        _ => (),
+    let result = users_coll().await.delete_one(doc!{"id": id}, None).await.ok();
+    // this is similar as what was commented on update, we change the result to json so we can grab the value deletedCount
+    // if it didn't delete anything we give a status of not found.
+    let result_as_json = Json(serde_json::to_value(&result).unwrap());
+    if result_as_json["deletedCount"].as_i64().unwrap() == 0 {
+        return (StatusCode::NOT_FOUND, Json(json!({"status": "not_found"})))
     }
 
-    user_db::remove_by_id(id);
-    return (StatusCode::OK, Json(json!({"status": "ok"})));
+    return (StatusCode::OK, Json(json!({"status": result})));
 }
 
 fn body_validators() -> HashMap<String, Types> {
