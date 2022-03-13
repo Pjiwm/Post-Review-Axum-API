@@ -1,5 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct User {
     pub username: String,
     pub id: i64,
