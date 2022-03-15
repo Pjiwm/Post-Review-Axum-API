@@ -20,12 +20,13 @@ pub async fn create(Json(payload): Json<Value>) -> impl IntoResponse {
     // response.0 is the StatusCode and response.1 is the Json<Value>, Response is a tuple.
     if response.0 == StatusCode::CREATED {
         let user = user_create(Json(payload));
-        users_coll().await.insert_one(user, None).await.unwrap();
+        let result = users_coll().await.insert_one(user, None).await.unwrap();
+        println!("{:?}", result);
     }
     return response;
 }
 
-pub async fn get_by_id(Path(id): Path<i64>) -> impl IntoResponse {
+pub async fn get_by_id(Path(id): Path<String>) -> impl IntoResponse {
     let filter = doc! {"id": id};
     let user = users_coll().await.find_one(filter, None).await.unwrap();
     let json = Json(serde_json::to_value(&user).unwrap());
@@ -84,7 +85,6 @@ pub async fn remove(Path(id): Path<i64>) -> impl IntoResponse {
 fn body_validators() -> HashMap<String, Types> {
     let mut values: HashMap<String, Types> = HashMap::new();
     values.insert("username".to_owned(), Types::String);
-    values.insert("id".to_owned(), Types::U64);
     values.insert("age".to_owned(), Types::U64);
     values
 }
@@ -92,7 +92,8 @@ fn body_validators() -> HashMap<String, Types> {
 fn user_create(Json(payload): Json<Value>) -> models::User {
     let user = models::User {
         username: payload["username"].to_string(),
-        id: payload["id"].to_string().parse::<i64>().unwrap(),
+        id: None,
+        // id: payload["id"].to_string().parse::<i64>().unwrap(),
         age: payload["age"].to_string().parse::<u64>().unwrap(),
     };
     user
