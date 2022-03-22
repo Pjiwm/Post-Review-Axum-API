@@ -12,6 +12,7 @@ services:
       - .env
     environment:
       DB_CONNECTION: ${DB_CONNECTION}
+      JWT_SECRET: ${JWT_SECRET}
   mongo:
     container_name: axum_mongo
     image: mongo

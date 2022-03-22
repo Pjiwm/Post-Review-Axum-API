@@ -4,13 +4,11 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Json};
 use serde_json::{json, Value};
 use mongodb::bson::Document;
-use mongodb::{
-    bson::{doc, oid::ObjectId},
-};
+use mongodb::bson::{doc, oid::ObjectId}; 
 use futures::stream::TryStreamExt;
 use crate::models;
 use crate::mongo::users_coll;
-use crate::utils::encryption;
+use crate::utils::{encryption, jwt};
 
 pub async fn create(Json(payload): Json<Value>) -> impl IntoResponse {
     let user = models::User::new(Json(payload));
@@ -36,8 +34,12 @@ pub async fn login(Json(payload): Json<Value>) -> impl IntoResponse {
         None => return (StatusCode::NOT_FOUND, Json(json!({"status": "user not found"}))),
         _ => (),
     }
-    if encryption::validate(&user.unwrap().password, &payload["password"].to_string()) {
-        return (StatusCode::OK, Json(json!({"status": "logged in"})))
+    if encryption::validate(&user.as_ref().unwrap().password, &payload["password"].to_string()) {
+        let jwt = jwt::encode_user(user.unwrap());
+        return (StatusCode::OK, Json(json!({
+            "status": "logged in",
+            "token": jwt
+        })))
     }
     return (StatusCode::BAD_REQUEST, Json(json!({"status": "incorrect password"})))
 

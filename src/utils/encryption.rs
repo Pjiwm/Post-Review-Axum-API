@@ -6,5 +6,5 @@ pub fn encrypt(s: &str) -> String {
 }
 
 pub fn validate(hashed_str: &str, s: &str) -> bool {
-    verify(s, hashed_str).unwrap()
+    verify(s, &hashed_str).unwrap()
 }
