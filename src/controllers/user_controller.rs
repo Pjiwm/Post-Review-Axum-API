@@ -20,7 +20,7 @@ pub async fn create(Json(payload): Json<Value>) -> impl IntoResponse {
     } else {
         (StatusCode::BAD_REQUEST, Json(json!({
             "error": "bad request",
-            "solution": "body should have, age: number and username: string"
+            "solution": "body should have, age: number, username: string, password: string of 8 characters or more."
         })))
     }
 }

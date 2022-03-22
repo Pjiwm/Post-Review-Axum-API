@@ -5,6 +5,7 @@ mod db;
 mod models;
 mod router;
 mod mongo;
+mod utils;
 #[tokio::main]
 async fn main() {
     // db_connect::connect();
