@@ -10,6 +10,7 @@ use mongodb::{
 use futures::stream::TryStreamExt;
 use crate::models;
 use crate::mongo::users_coll;
+use crate::utils::encryption;
 
 pub async fn create(Json(payload): Json<Value>) -> impl IntoResponse {
     let user = models::User::new(Json(payload));
@@ -23,6 +24,23 @@ pub async fn create(Json(payload): Json<Value>) -> impl IntoResponse {
             "solution": "body should have, age: number, username: string, password: string of 8 characters or more."
         })))
     }
+}
+
+pub async fn login(Json(payload): Json<Value>) -> impl IntoResponse {
+    if !payload["username"].is_string() {
+        return (StatusCode::BAD_REQUEST, Json(json!({"status": "no username was inserted"})))
+    }
+    let filter = doc! {"username": payload["username"].to_string()};
+    let user = users_coll().await.find_one(filter, None).await.unwrap();
+    match &user {
+        None => return (StatusCode::NOT_FOUND, Json(json!({"status": "user not found"}))),
+        _ => (),
+    }
+    if encryption::validate(&user.unwrap().password, &payload["password"].to_string()) {
+        return (StatusCode::OK, Json(json!({"status": "logged in"})))
+    }
+    return (StatusCode::BAD_REQUEST, Json(json!({"status": "incorrect password"})))
+
 }
 
 pub async fn get_by_id(Path(id): Path<String>) -> impl IntoResponse {

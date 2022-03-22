@@ -12,6 +12,9 @@ pub fn routes() -> axum::Router {
             get(user_controller::get_by_id)
                 .put(user_controller::update)
                 .delete(user_controller::remove),
-        );
+        )
+        .route(
+            "/login",
+            get(user_controller::login));
     return router;
 }
