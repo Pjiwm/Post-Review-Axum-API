@@ -23,7 +23,7 @@
 	"settings": {},
 
 	// Add the IDs of extensions you want installed when the container is created.
-	"extensions": ["rust-lang.rust", "vadimcn.vscode-lldb", "be5invis.toml", "statiolake.vscode-rustfmt", "ms-azuretools.vscode-docker"]
+	"extensions": ["rust-lang.rust", "vadimcn.vscode-lldb", "be5invis.toml", "ms-azuretools.vscode-docker"]
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],

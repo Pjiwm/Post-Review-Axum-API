@@ -1,7 +1,7 @@
+use crate::controllers::auth_controller;
 use crate::controllers::user_controller;
 use axum::{routing::get, Router};
-use crate::controllers::auth_controller;
-
+use crate::middleware::auth;
 pub fn routes() -> axum::Router {
     let router: axum::Router = Router::new()
         .route(
@@ -14,13 +14,8 @@ pub fn routes() -> axum::Router {
                 .put(user_controller::update)
                 .delete(user_controller::remove),
         )
-        .route(
-            "/login",
-            get(user_controller::login),
-        )
-        .route(
-            "/auth",
-            get(auth_controller::authenticate)
-        );
+        .route("/login", get(user_controller::login))
+        .route("/auth", get(auth_controller::authenticate))
+        .layer(auth::AuthLayer);
     return router;
 }
