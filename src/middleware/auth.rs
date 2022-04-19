@@ -38,13 +38,13 @@ where
         let auth_token = &request.headers().get("authorization");
         println!("{:?}", auth_token);
         let future = self.inner.call(request);
-        let auth_error_response = Response::builder().status(StatusCode::NOT_FOUND).body(());
+        let _auth_error_response = Response::builder().status(StatusCode::NOT_FOUND).body(());
         let x = Box::pin(async move {
             let response: Response = future.await?;
             Ok(response)
         });
-        let response =  Box::pin(Response::builder().status(StatusCode::NOT_FOUND).body(()));
-// TODO fix middleware responding with unauthorized.
+        let _response = Box::pin(Response::builder().status(StatusCode::NOT_FOUND).body(()));
+        // TODO fix middleware responding with unauthorized.
         return x;
     }
 }
