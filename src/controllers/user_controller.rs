@@ -1,52 +1,70 @@
-use std::vec::Vec;
-use axum::extract::Path;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Json};
-use serde_json::{json, Value};
-use mongodb::bson::Document;
-use mongodb::bson::{doc, oid::ObjectId}; 
-use futures::stream::TryStreamExt;
 use crate::models;
 use crate::mongo::users_coll;
 use crate::utils::{encryption, jwt};
+use axum::extract::Path;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Json};
+use futures::stream::TryStreamExt;
+use mongodb::bson::Document;
+use mongodb::bson::{doc, oid::ObjectId};
+use serde_json::{json, Value};
+use std::vec::Vec;
 
 pub async fn create(Json(payload): Json<Value>) -> impl IntoResponse {
-    let user = models::User::new(Json(payload));
-    if user.is_ok() {
-    let result = users_coll().await.insert_one(user.unwrap(), None).await.unwrap();
-    let json = Json(serde_json::to_value(&result).unwrap());
-    (StatusCode::OK, json)
-    } else {
-        (StatusCode::BAD_REQUEST, Json(json!({
-            "error": "bad request",
-            "solution": "body should have, age: number, username: string, password: string of 8 characters or more."
-        })))
+    let user = models::User::new(payload);
+    match user {
+        Ok(u) => {
+            let result = users_coll().await.insert_one(u, None).await.unwrap();
+            let json = Json(serde_json::to_value(&result).unwrap());
+            return (StatusCode::OK, json);
+        }
+        Err(e) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({"error": e.to_string()})),
+            )
+        }
     }
 }
 
 pub async fn login(Json(payload): Json<Value>) -> impl IntoResponse {
     if !payload["username"].is_string() {
-        return (StatusCode::BAD_REQUEST, Json(json!({"status": "no username was inserted"})))
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"status": "no username was inserted"})),
+        );
     }
     let filter = doc! {"username": payload["username"].to_string()};
     let user = users_coll().await.find_one(filter, None).await.unwrap();
     match &user {
-        None => return (StatusCode::NOT_FOUND, Json(json!({"status": "user not found"}))),
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({"status": "user not found"})),
+            )
+        }
         _ => (),
     }
-    if encryption::validate(&user.as_ref().unwrap().password, &payload["password"].to_string()) {
+    if encryption::validate(
+        &user.as_ref().unwrap().password,
+        &payload["password"].to_string(),
+    ) {
         let jwt = jwt::encode_user(user.unwrap());
-        return (StatusCode::OK, Json(json!({
-            "status": "logged in",
-            "token": jwt
-        })))
+        return (
+            StatusCode::OK,
+            Json(json!({
+                "status": "logged in",
+                "token": jwt
+            })),
+        );
     }
-    return (StatusCode::BAD_REQUEST, Json(json!({"status": "incorrect password"})))
-
+    return (
+        StatusCode::BAD_REQUEST,
+        Json(json!({"status": "incorrect password"})),
+    );
 }
 
 pub async fn get_by_id(Path(id): Path<String>) -> impl IntoResponse {
-    
     let filter = doc! {"_id": ObjectId::parse_str(id).unwrap()};
     let user = users_coll().await.find_one(filter, None).await.unwrap();
     let json = Json(serde_json::to_value(&user).unwrap());
@@ -79,15 +97,19 @@ pub async fn update(Path(id): Path<String>, Json(payload): Json<Value>) -> impl 
             changes_doc.insert(k, v.as_str());
         }
     }
-    let changes = doc!{"$set": changes_doc};
-    let result = users_coll().await.update_one(filter,changes, None).await.ok();
-    // The result contains the value matchedCount which shows how many values got changed, 
+    let changes = doc! {"$set": changes_doc};
+    let result = users_coll()
+        .await
+        .update_one(filter, changes, None)
+        .await
+        .ok();
+    // The result contains the value matchedCount which shows how many values got changed,
     // by changing this type to JSON we can check if the value is higher than 0, otherwise it's a 404.
     let result_as_json = Json(serde_json::to_value(&result).unwrap());
     if result_as_json["matchedCount"].as_i64().unwrap() == 0 {
-        return (StatusCode::NOT_FOUND, Json(json!({"status": "not_found"})))
+        return (StatusCode::NOT_FOUND, Json(json!({"status": "not_found"})));
     }
-    return (StatusCode::OK, Json(json!({"status": result})))
+    return (StatusCode::OK, Json(json!({ "status": result })));
 }
 
 pub async fn remove(Path(id): Path<String>) -> impl IntoResponse {
@@ -97,7 +119,7 @@ pub async fn remove(Path(id): Path<String>) -> impl IntoResponse {
     // if it didn't delete anything we give a status of not found.
     let result_as_json = Json(serde_json::to_value(&result).unwrap());
     if result_as_json["deletedCount"].as_i64().unwrap() == 0 {
-        return (StatusCode::NOT_FOUND, Json(json!({"status": "not_found"})))
+        return (StatusCode::NOT_FOUND, Json(json!({"status": "not_found"})));
     }
-    return (StatusCode::OK, Json(json!({"status": result})));
+    return (StatusCode::OK, Json(json!({ "status": result })));
 }
