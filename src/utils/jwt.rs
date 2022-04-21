@@ -65,7 +65,6 @@ where
         .await
         .map_err(|_| AuthError::InvalidToken)?;
         // Decode the user data
-        println!(":{:?}", decode::<Claims>(bearer.token(), &KEYS.decoding, &Validation::default()));
         let token_data = decode::<Claims>(bearer.token(), &KEYS.decoding, &Validation::default())
             .map_err(|_| AuthError::InvalidToken)?;
         Ok(token_data.claims)

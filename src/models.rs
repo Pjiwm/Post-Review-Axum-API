@@ -10,7 +10,7 @@ pub struct User {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub username: String,
-    pub age: u64,
+    // pub age: u64,
     pub password: String,
 }
 
@@ -18,14 +18,6 @@ impl User {
     pub fn new(payload: Value) -> Result<Self> {
         let user = serde_json::from_str(payload.to_string().as_str());
         return user;
-    }
-    pub fn copy(&self) -> User {
-        User {
-            username: self.username.to_owned(),
-            id: self.id,
-            age: self.age,
-            password: self.password.to_owned(),
-        }
     }
 }
 
@@ -37,4 +29,11 @@ pub struct Post {
     pub release_date: DateTime,
     pub title: String,
     pub tags: Vec<String>,
+}
+
+impl Post {
+    pub fn new(payload: Value) -> Result<Self> {
+        let post = serde_json::from_str(payload.to_string().as_str());
+        return post;
+    }
 }

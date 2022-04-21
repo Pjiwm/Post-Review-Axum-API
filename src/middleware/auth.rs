@@ -43,8 +43,7 @@ where
             let response: Response = future.await?;
             Ok(response)
         });
-        let _response = Box::pin(Response::builder().status(StatusCode::NOT_FOUND).body(()));
-        // TODO fix middleware responding with unauthorized.
+            // TODO fix middleware responding with unauthorized.
         return x;
     }
 }
