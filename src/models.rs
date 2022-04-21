@@ -1,12 +1,11 @@
-use axum::response::Json;
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::DateTime;
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use serde_json::Value;
 
 pub trait PayloadConstructor {
+    fn name() -> String;
     fn new(payload: Value) -> Result<Self>
     where
         Self: Sized;
@@ -24,6 +23,9 @@ impl PayloadConstructor for User {
     fn new(payload: Value) -> Result<Self> {
         let user = serde_json::from_str(payload.to_string().as_str());
         return user;
+    }
+    fn name() -> String {
+        "users".to_string()
     }
 }
 
@@ -45,5 +47,8 @@ impl PayloadConstructor for Post {
      fn new(payload: Value) -> Result<Self> {
         let post = serde_json::from_str(payload.to_string().as_str());
         return post;
+    }
+    fn name() -> String {
+        "posts".to_string()
     }
 }

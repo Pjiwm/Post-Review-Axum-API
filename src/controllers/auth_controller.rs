@@ -5,7 +5,6 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Json};
 use mongodb::bson::doc;
 use serde_json::{json, Value};
-use tower::filter;
 
 pub async fn authenticate(claims: jwt::Claims) -> Result<impl IntoResponse, jwt::AuthError> {
     let json = Json(serde_json::to_value(&claims).unwrap());
@@ -20,7 +19,7 @@ pub async fn login(Json(payload): Json<Value>) -> impl IntoResponse {
         );
     }
     let filter = doc! {"username": payload["username"].to_string()};
-    let user = collection::<models::User>("users")
+    let user = collection::<models::User>()
         .await
         .find_one(filter, None)
         .await

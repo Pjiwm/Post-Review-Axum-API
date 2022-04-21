@@ -1,4 +1,4 @@
-use crate::models;
+use crate::models::PayloadConstructor;
 use mongodb::{options::ClientOptions, Client, Collection};
 
 pub async fn get_db() -> mongodb::Database {
@@ -9,6 +9,7 @@ pub async fn get_db() -> mongodb::Database {
     return db;
 }
 
-pub async fn collection<T>(coll_name: &str) -> Collection<T> {
-    get_db().await.collection::<T>(coll_name)
+pub async fn collection<T: PayloadConstructor>() -> Collection<T> {
+    let coll_name = T::name();
+    get_db().await.collection::<T>(coll_name.as_str())
 }

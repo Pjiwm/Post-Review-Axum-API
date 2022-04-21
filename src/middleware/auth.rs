@@ -7,9 +7,7 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use serde_json::{json, Value};
 
-use crate::utils;
 // middleware that shows how to consume the request body upfront
 pub async fn print_request_body(
     request: Request<BoxBody>,
@@ -24,31 +22,31 @@ pub async fn print_request_body(
 // the request back together
 async fn buffer_request_body(request: Request<BoxBody>) -> Result<Request<BoxBody>, Response> {
     let (parts, body) = request.into_parts();
-    let uri = &parts.uri;
-    let method = &parts.method;
-    let auth_token = &parts.headers.get("authorization");
+    let _uri = &parts.uri;
+    let _method = &parts.method;
+    let _auth_token = &parts.headers.get("authorization");
 
     // this wont work if the body is an long running stream
-    let mut bytes = hyper::body::to_bytes(body)
+    let bytes = hyper::body::to_bytes(body)
         .await
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response())?;
-        let bytes_str = std::str::from_utf8(&bytes).unwrap();
-        println!("{}", bytes_str);
+    let bytes_str = std::str::from_utf8(&bytes).unwrap();
+    println!("{}", bytes_str);
     do_thing_with_request_body(bytes.clone());
 
     Ok(Request::from_parts(parts, body::boxed(Full::from(bytes))))
 }
 
-fn do_thing_with_request_body(mut bytes: Bytes) {
+fn do_thing_with_request_body(bytes: Bytes) {
     println!("{:?}", bytes);
     tracing::debug!(body = ?bytes);
-    let mut a = Bytes::from(&b"hello world"[..]);
-    let x = String::from("\"password\":").as_bytes();
+    let  _a = Bytes::from(&b"hello world"[..]);
+    let _x = String::from("\"password\":").as_bytes();
 }
 
-async fn handler(_: PrintRequestBody, body: Bytes) {
-    tracing::debug!(?body, "handler received body");
-}
+// async fn handler(_: PrintRequestBody, body: Bytes) {
+//     tracing::debug!(?body, "handler received body");
+// }
 
 // extractor that shows how to consume the request body upfront
 struct PrintRequestBody;

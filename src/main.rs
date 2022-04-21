@@ -1,7 +1,6 @@
 use axum::Router;
-// our modules
+
 mod controllers;
-mod db;
 mod models;
 mod router;
 mod mongo;
