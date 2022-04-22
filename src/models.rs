@@ -55,3 +55,20 @@ impl PayloadConstructor for Post {
         "posts".to_string()
     }
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Review {
+    pub post: Post,
+    pub title: String,
+    pub review: String
+}
+
+impl PayloadConstructor for Review {
+    fn new(payload: Value) -> Result<Self> {
+       let review = serde_json::from_str(payload.to_string().as_str());
+       return review;
+   }
+   fn name() -> String {
+       "reviews".to_string()
+   }
+}
