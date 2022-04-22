@@ -1,15 +1,20 @@
+use std::{env, net::SocketAddr};
+
 use axum::Router;
 
 mod controllers;
-mod models;
-mod router;
-mod mongo;
-mod utils;
 mod middleware;
+mod models;
+mod mongo;
+mod router;
+mod utils;
 #[tokio::main]
 async fn main() {
-    // db_connect::connect();
-    axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
+    let port = env::var("PORT").unwrap_or(String::from("3000"));
+    let addr = ["0.0.0.0:", port.clone().as_str()].concat();
+    let server: SocketAddr = addr.parse().expect("Could not parse socket address");
+
+    axum::Server::bind(&server.to_owned())
         .serve(app().into_make_service())
         .await
         .unwrap();
