@@ -38,6 +38,7 @@ pub struct Post {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub content: String,
+    // turn into proper type that uses serde?
     pub release_date: DateTime,
     pub title: String,
     pub tags: Vec<String>,
