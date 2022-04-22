@@ -1,4 +1,3 @@
-use crate::controllers::auth_controller;
 use crate::controllers::generic_controller;
 use crate::middleware::auth;
 use crate::models;

@@ -3,6 +3,7 @@ use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use serde_json::Value;
+use mongodb::bson::serde_helpers::bson_datetime_as_rfc3339_string;
 
 pub trait PayloadConstructor {
     fn name() -> String;
@@ -38,7 +39,8 @@ pub struct Post {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub content: String,
-    // turn into proper type that uses serde?
+    // turn into proper type that uses serde?lld
+    #[serde(with = "bson_datetime_as_rfc3339_string")]
     pub release_date: DateTime,
     pub title: String,
     pub tags: Vec<String>,
