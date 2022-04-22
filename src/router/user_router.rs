@@ -25,12 +25,12 @@ pub fn routes() -> axum::Router {
                 .delete(generic_controller::remove::<models::User>),
         )
         .route("/login", get(auth_controller::login))
-        .route("/auth", get(auth_controller::authenticate))
-        .layer(
-            ServiceBuilder::new()
-                .map_request_body(body::boxed)
-                .layer(middleware::from_fn(auth::print_request_body)),
-        );
+        .route("/auth", get(auth_controller::authenticate));
+        // .layer(
+        //     ServiceBuilder::new()
+        //         .map_request_body(body::boxed)
+        //         .layer(middleware::from_fn(auth::auth)),
+        // );
 
     return router;
 }

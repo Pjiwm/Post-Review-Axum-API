@@ -1,8 +1,4 @@
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use once_cell::sync::Lazy;
-use serde_derive::{Deserialize, Serialize};
-use std::{fmt::Display};
-use crate::models;
+use crate::models::{self, User};
 use axum::{
     async_trait,
     extract::{FromRequest, RequestParts, TypedHeader},
@@ -11,7 +7,11 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use once_cell::sync::Lazy;
+use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
+use std::fmt::Display;
 
 pub fn encode_user(user: models::User) -> String {
     let claims = Claims {
@@ -19,6 +19,15 @@ pub fn encode_user(user: models::User) -> String {
         exp: 200000000000000000,
     };
     encode(&Header::default(), &claims, &KEYS.encoding).unwrap()
+}
+
+pub fn decode_jwt(token: &str) -> User {
+    let decoded = decode::<Claims>(
+        &token,
+        &DecodingKey::from_secret("secret".as_ref()),
+        &Validation::default(),
+    );
+    return decoded.unwrap().claims.user;
 }
 
 static KEYS: Lazy<Keys> = Lazy::new(|| {
@@ -61,9 +70,9 @@ where
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         // Extract the token from the authorization header
         let TypedHeader(Authorization(bearer)) =
-        TypedHeader::<Authorization<Bearer>>::from_request(req)
-        .await
-        .map_err(|_| AuthError::InvalidToken)?;
+            TypedHeader::<Authorization<Bearer>>::from_request(req)
+                .await
+                .map_err(|_| AuthError::InvalidToken)?;
         // Decode the user data
         let token_data = decode::<Claims>(bearer.token(), &KEYS.decoding, &Validation::default())
             .map_err(|_| AuthError::InvalidToken)?;
