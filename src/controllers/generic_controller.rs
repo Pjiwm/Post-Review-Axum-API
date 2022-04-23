@@ -127,7 +127,6 @@ pub async fn remove<T: PayloadConstructor + Serialize>(
 }
 
 async fn get_user_id(claims: jwt::Claims) -> Option<ObjectId> {
-    println!("{:?}", claims.user);
     let filter = doc! {"username": &claims.user.username, "password": &claims.user.password};
     let user = collection::<models::User>()
         .await

@@ -63,12 +63,11 @@ pub async fn register(Json(payload): Json<Value>) -> impl IntoResponse {
     }
     let mut user = user.unwrap();
     user.password = utils::encryption::encrypt(&user.password);
-    let jwt = jwt::encode_user(user.copy());
-
-    let mongo_res = collection::<models::User>()
-        .await
-        .insert_one(user, None)
-        .await.unwrap();
-
-    return (StatusCode::CREATED, Json(json!({ "result": mongo_res, "token": jwt })));
+    
+    collection::<models::User>()
+    .await
+    .insert_one(user, None)
+    .await.unwrap();
+    
+    return (StatusCode::CREATED, Json(json!({ "result": "Account created, login to receive token"})));
 }

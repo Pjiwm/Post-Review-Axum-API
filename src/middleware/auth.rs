@@ -1,9 +1,7 @@
 use axum::{
     http::{self, Request, StatusCode},
-    middleware::{self, Next},
+    middleware::Next,
     response::IntoResponse,
-    routing::get,
-    Router,
 };
 
 use crate::utils;
@@ -22,16 +20,9 @@ pub async fn auth<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
 
 fn token_is_valid(token: &str) -> bool {
     let token = *token.split(" ").collect::<Vec<&str>>().get(1).unwrap();
-    println!("{}", token);
     let claims = utils::jwt::decode_jwt(token);
     match claims {
-        Ok(c) => {
-            println!("{:?}", c.user);
-            true
-        }
-        Err(_) => {
-            println!("oops");
-            false
-        },
+        Ok(c) => true,
+        Err(_) => false,
     }
 }

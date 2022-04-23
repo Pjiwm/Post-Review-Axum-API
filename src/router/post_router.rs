@@ -1,5 +1,5 @@
 use crate::controllers::generic_controller;
-use crate::middleware::auth;
+use crate::middleware::{auth, ownership};
 use crate::models;
 use axum::middleware;
 use axum::{

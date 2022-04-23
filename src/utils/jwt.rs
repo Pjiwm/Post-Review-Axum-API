@@ -19,7 +19,6 @@ pub fn encode_user(user: models::User) -> String {
         exp: 200000000000000000,
     };
     let str = encode(&Header::default(), &claims, &KEYS.encoding).unwrap();
-    println!("{}", str);
     str
 }
 
