@@ -6,5 +6,5 @@ pub fn root_router() -> axum::Router {
         .nest("/posts", post_router::routes())
         .nest("/reviews", review_router::routes());
 
-    return router;
+    router
 }
