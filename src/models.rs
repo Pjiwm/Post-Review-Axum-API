@@ -20,6 +20,16 @@ pub struct User {
     pub password: String,
 }
 
+impl User {
+    pub fn copy(&self) -> User {
+        User {
+            username: self.username.to_owned(),
+            id: self.id,
+            password: self.password.to_owned()
+        }
+    }
+}
+
 impl PayloadConstructor for User {
     fn new(payload: Value) -> Result<Self> {
         let user = serde_json::from_str(payload.to_string().as_str());

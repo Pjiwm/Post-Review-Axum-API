@@ -21,8 +21,17 @@ pub async fn auth<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
 }
 
 fn token_is_valid(token: &str) -> bool {
-    let jwt = *token.split(" ").collect::<Vec<&str>>().get(1).unwrap();
-    let user = utils::jwt::decode_jwt(jwt);
-    println!("{:?}", user);
-    true
+    let token = *token.split(" ").collect::<Vec<&str>>().get(1).unwrap();
+    println!("{}", token);
+    let claims = utils::jwt::decode_jwt(token);
+    match claims {
+        Ok(c) => {
+            println!("{:?}", c.user);
+            true
+        }
+        Err(_) => {
+            println!("oops");
+            false
+        },
+    }
 }

@@ -18,16 +18,16 @@ pub fn encode_user(user: models::User) -> String {
         user: user,
         exp: 200000000000000000,
     };
-    encode(&Header::default(), &claims, &KEYS.encoding).unwrap()
+    let str = encode(&Header::default(), &claims, &KEYS.encoding).unwrap();
+    println!("{}", str);
+    str
 }
 
-pub fn decode_jwt(token: &str) -> User {
-    let decoded = decode::<Claims>(
-        &token,
-        &DecodingKey::from_secret("secret".as_ref()),
-        &Validation::default(),
-    );
-    return decoded.unwrap().claims.user;
+pub fn decode_jwt(token: &str) -> Result<Claims, AuthError> {
+    let token_data = decode::<Claims>(token, &KEYS.decoding, &Validation::default())
+        .map_err(|_| AuthError::InvalidToken)?;
+
+    Ok(token_data.claims)
 }
 
 static KEYS: Lazy<Keys> = Lazy::new(|| {
@@ -51,7 +51,7 @@ impl Keys {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    user: models::User,
+    pub user: models::User,
     exp: usize,
 }
 impl Display for Claims {
