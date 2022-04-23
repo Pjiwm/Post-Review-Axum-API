@@ -18,7 +18,7 @@ pub async fn login(Json(payload): Json<Value>) -> impl IntoResponse {
             Json(json!({"status": "no username was inserted"})),
         );
     }
-    let filter = doc! {"username": payload["username"].to_string()};
+    let filter = doc! {"username": payload["username"].to_string().replace("\"", "")};
     let user = collection::<models::User>()
         .await
         .find_one(filter, None)
@@ -35,7 +35,7 @@ pub async fn login(Json(payload): Json<Value>) -> impl IntoResponse {
     }
     if encryption::validate(
         &user.as_ref().unwrap().password,
-        &payload["password"].to_string(),
+        &payload["password"].to_string().replace("\"", ""),
     ) {
         let jwt = jwt::encode_user(user.unwrap().copy());
         return (
@@ -64,7 +64,7 @@ pub async fn register(Json(payload): Json<Value>) -> impl IntoResponse {
     let mut user = user.unwrap();
     user.password = utils::encryption::encrypt(&user.password);
     let jwt = jwt::encode_user(user.copy());
-    
+
     let mongo_res = collection::<models::User>()
         .await
         .insert_one(user, None)
