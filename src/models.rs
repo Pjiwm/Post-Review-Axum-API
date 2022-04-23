@@ -16,8 +16,17 @@ pub struct User {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub username: String,
-    // pub age: u64,
     pub password: String,
+}
+
+impl User {
+    pub fn copy(&self) -> User {
+        User {
+            username: self.username.to_owned(),
+            id: self.id,
+            password: self.password.to_owned()
+        }
+    }
 }
 
 impl PayloadConstructor for User {
@@ -30,10 +39,6 @@ impl PayloadConstructor for User {
     }
 }
 
-impl Unpin for User {}
-unsafe impl Sync for User{}
-
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Post {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
@@ -44,6 +49,8 @@ pub struct Post {
     pub release_date: DateTime,
     pub title: String,
     pub tags: Vec<String>,
+    pub author_id: ObjectId
+
 }
 
 impl PayloadConstructor for Post {
@@ -60,7 +67,8 @@ impl PayloadConstructor for Post {
 pub struct Review {
     pub post: Post,
     pub title: String,
-    pub review: String
+    pub review: String,
+    pub author_id: ObjectId
 }
 
 impl PayloadConstructor for Review {

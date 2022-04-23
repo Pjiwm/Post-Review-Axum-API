@@ -1,5 +1,5 @@
 use crate::controllers::generic_controller;
-use crate::middleware::auth;
+use crate::middleware::{auth, ownership};
 use crate::models;
 use axum::middleware;
 use axum::{
@@ -26,7 +26,7 @@ pub fn routes() -> axum::Router {
         .layer(
             ServiceBuilder::new()
                 .map_request_body(body::boxed)
-                .layer(middleware::from_fn(auth::print_request_body)),
+                .layer(middleware::from_fn(auth::auth)),
         );
 
     return router;

@@ -1,5 +1,6 @@
-use crate::models::PayloadConstructor;
+use crate::models::{self, PayloadConstructor};
 use crate::mongo::collection;
+use crate::utils::jwt;
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Json};
@@ -11,18 +12,26 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use std::vec::Vec;
 
-
 pub async fn create<T: PayloadConstructor + Serialize>(
+    claims: jwt::Claims,
     Json(payload): Json<Value>,
 ) -> impl IntoResponse {
+    // Get the user id out of the claim and add it inside the paylaod.
+    let mut payload = payload;
+    let user_id = get_user_id(claims).await;
+    if user_id.is_none() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "Could not get author id"})),
+        );
+    }
+    let user_id = user_id.unwrap();
+    payload["author_id"] = serde_json::to_value(user_id).unwrap();
+
     let object = T::new(payload);
     match object {
         Ok(u) => {
-            let result = collection::<T>()
-                .await
-                .insert_one(u, None)
-                .await
-                .unwrap();
+            let result = collection::<T>().await.insert_one(u, None).await.unwrap();
             let json = Json(serde_json::to_value(&result).unwrap());
             return (StatusCode::OK, json);
         }
@@ -60,11 +69,7 @@ pub async fn get_by_id<
 
 pub async fn get_all<T: PayloadConstructor + Serialize + Sync + Send + Unpin + DeserializeOwned>(
 ) -> impl IntoResponse {
-    let mut objects = collection::<T>()
-        .await
-        .find(None, None)
-        .await
-        .unwrap();
+    let mut objects = collection::<T>().await.find(None, None).await.unwrap();
     let mut json: Vec<Value> = Vec::new();
 
     while let Some(object) = objects.try_next().await.expect(r#"something went wrong"#) {
@@ -111,11 +116,7 @@ pub async fn remove<T: PayloadConstructor + Serialize>(
         return (StatusCode::NOT_FOUND, Json(json!({"error": "Not found"})));
     }
     let filter = doc! {"_id": mongo_id.unwrap()};
-    let result = collection::<T>()
-        .await
-        .delete_one(filter, None)
-        .await
-        .ok();
+    let result = collection::<T>().await.delete_one(filter, None).await.ok();
     // this is similar as what was commented on update, we change the result to json so we can grab the value deletedCount
     // if it didn't delete anything we give a status of not found.
     let result_as_json = Json(serde_json::to_value(&result).unwrap());
@@ -123,4 +124,17 @@ pub async fn remove<T: PayloadConstructor + Serialize>(
         return (StatusCode::NOT_FOUND, Json(json!({"status": "not_found"})));
     }
     return (StatusCode::OK, Json(json!({ "status": result })));
+}
+
+async fn get_user_id(claims: jwt::Claims) -> Option<ObjectId> {
+    let filter = doc! {"username": &claims.user.username, "password": &claims.user.password};
+    let user = collection::<models::User>()
+        .await
+        .find_one(filter, None)
+        .await
+        .unwrap();
+    if user.is_none() {
+        return None;
+    }
+    return user.unwrap().id;
 }
