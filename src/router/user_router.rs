@@ -1,15 +1,11 @@
 use crate::controllers::auth_controller;
 use crate::controllers::generic_controller;
-use crate::middleware::auth;
 use crate::models;
-use axum::middleware;
+use axum::routing::post;
 use axum::{
-    body,
     routing::get,
     Router,
 };
-use tower::ServiceBuilder;
-use tower_http::ServiceBuilderExt;
 
 pub fn routes() -> axum::Router {
     let router: axum::Router = Router::new()
@@ -25,7 +21,8 @@ pub fn routes() -> axum::Router {
                 .delete(generic_controller::remove::<models::User>),
         )
         .route("/login", get(auth_controller::login))
-        .route("/auth", get(auth_controller::authenticate));
+        .route("/auth", get(auth_controller::authenticate))
+        .route("/register", post(auth_controller::register));
         // .layer(
         //     ServiceBuilder::new()
         //         .map_request_body(body::boxed)
