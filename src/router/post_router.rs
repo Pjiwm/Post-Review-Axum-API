@@ -1,12 +1,8 @@
 use crate::controllers::generic_controller;
-use crate::middleware::{auth, ownership};
+use crate::middleware::auth;
 use crate::models;
 use axum::middleware;
-use axum::{
-    body,
-    routing::get,
-    Router,
-};
+use axum::{body, routing::get, Router};
 use tower::ServiceBuilder;
 use tower_http::ServiceBuilderExt;
 

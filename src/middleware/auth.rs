@@ -22,7 +22,7 @@ fn token_is_valid(token: &str) -> bool {
     let token = *token.split(" ").collect::<Vec<&str>>().get(1).unwrap();
     let claims = utils::jwt::decode_jwt(token);
     match claims {
-        Ok(c) => true,
+        Ok(_) => true,
         Err(_) => false,
     }
 }

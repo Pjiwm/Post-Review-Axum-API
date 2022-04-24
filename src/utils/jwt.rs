@@ -1,4 +1,4 @@
-use crate::models::{self, User};
+use crate::models;
 use axum::{
     async_trait,
     extract::{FromRequest, RequestParts, TypedHeader},
@@ -7,7 +7,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use once_cell::sync::Lazy;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
@@ -80,6 +80,7 @@ where
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum AuthError {
     WrongCredentials,
     MissingCredentials,

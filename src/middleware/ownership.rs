@@ -11,10 +11,7 @@ use mongodb::bson::{doc, oid::ObjectId};
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{models, utils};
-use crate::{
-    models::PayloadConstructor,
-    mongo::collection,
-};
+use crate::{models::PayloadConstructor, mongo::collection};
 
 pub async fn ownership<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
     let auth_header = req
