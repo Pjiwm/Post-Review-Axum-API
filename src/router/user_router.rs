@@ -3,7 +3,7 @@ use crate::controllers::generic_controller;
 use crate::models;
 use axum::routing::post;
 use axum::{routing::get, Router};
-
+// Router for authentication and user CRUD actions
 pub fn routes() -> axum::Router {
     let router: axum::Router = Router::new()
         .route("/", get(generic_controller::get_all::<models::User>))

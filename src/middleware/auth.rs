@@ -5,7 +5,8 @@ use axum::{
 };
 
 use crate::utils;
-
+/// Small middleware function that immediately gives back an unauthenticated response
+/// This middleware is only used if a controller function uses a parameter using claims.
 pub async fn auth<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
     let auth_header = req
         .headers()
@@ -17,7 +18,7 @@ pub async fn auth<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
         _ => Err(StatusCode::UNAUTHORIZED),
     }
 }
-
+/// Checks wheter the jsonwebtoken is valid or not
 fn token_is_valid(token: &str) -> bool {
     let token = *token.split(" ").collect::<Vec<&str>>().get(1).unwrap();
     let claims = utils::jwt::decode_jwt(token);

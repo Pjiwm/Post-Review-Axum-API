@@ -12,7 +12,11 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{models, utils};
 use crate::{models::PayloadConstructor, mongo::collection};
-
+/// Middleware for checking if the user sending the request is the owner of the requested object.
+/// It only checks on an update or delete.
+/// If the user is not logged in it will immediately give back an unauthenticated response
+/// If the user id of the requesting user doesn't match the author_id of the object,
+///  an unauthenticated response is given back as well.
 pub async fn ownership<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
     let auth_header = req
         .headers()
@@ -31,7 +35,7 @@ pub async fn ownership<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
     }
     Ok(next.run(req).await)
 }
-
+/// Gets the user and uses a match to check on the correct model.
 async fn is_object_owner(token: &str, uri: &str) -> bool {
     let token = *token.split(" ").collect::<Vec<&str>>().get(1).unwrap();
     let claims = utils::jwt::decode_jwt(token);
@@ -58,14 +62,21 @@ async fn is_object_owner(token: &str, uri: &str) -> bool {
         _ => return false,
     }
 }
-
+/// Gives back a tuple from parts of the uri.
+/// The function splits the total uri into pieces
+/// Based on the routes one of the uri parts is the model name
+/// the other part is the id
 fn get_model_and_id(uri: &str) -> (Option<String>, Option<String>) {
     let parts = uri.split('/').collect::<Vec<&str>>();
     let model_name = parts.get(1).map(|s| s.to_owned().to_owned());
     let object_id = parts.get(2).map(|s| s.to_owned().to_owned());
     return (model_name, object_id);
 }
-
+/// Checks if the user_id and author_id of the object are the same
+/// When something goes wrong like something being a None value false will be returned
+/// This function grabs the object from MongoDb
+/// Then its converted to JSON, because a generic is used this is needed, with a generic the values of the object are unknown.
+/// With JSON any key can be grabbed and if it isn't there it'll just give back None.
 async fn check_from_db<
     T: PayloadConstructor + Serialize + Sync + Send + Unpin + DeserializeOwned + Debug,
 >(

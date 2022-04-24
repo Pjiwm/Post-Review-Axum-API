@@ -5,12 +5,13 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Json};
 use mongodb::bson::doc;
 use serde_json::{json, Value};
-
+/// Sample controller function using claims. When claims are not available it will just send back unauthenticated.
 pub async fn authenticate(claims: jwt::Claims) -> Result<impl IntoResponse, jwt::AuthError> {
     let json = Json(serde_json::to_value(&claims).unwrap());
     Ok((StatusCode::OK, json))
 }
-
+/// Gives back a jsonwebtoken if password and username in body are matching.
+/// For both registrating and logging in the passwords will be encrypted.
 pub async fn login(Json(payload): Json<Value>) -> impl IntoResponse {
     if !payload["username"].is_string() {
         return (
@@ -51,7 +52,8 @@ pub async fn login(Json(payload): Json<Value>) -> impl IntoResponse {
         Json(json!({"status": "incorrect password"})),
     );
 }
-
+/// Stores a new account in the database if body has been filled in correctly.
+/// The password given will be stored encrypted.
 pub async fn register(Json(payload): Json<Value>) -> impl IntoResponse {
     let user = models::User::new(payload);
     if user.is_err() {

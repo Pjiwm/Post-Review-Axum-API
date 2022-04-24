@@ -11,7 +11,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::vec::Vec;
-
+/// Stores new object of the generic type given.
 pub async fn create<T: PayloadConstructor + Serialize>(
     claims: jwt::Claims,
     Json(payload): Json<Value>,
@@ -43,7 +43,7 @@ pub async fn create<T: PayloadConstructor + Serialize>(
         }
     }
 }
-
+/// Returns one object of the generic type given in JSON format.
 pub async fn get_by_id<
     T: PayloadConstructor + Serialize + Sync + Send + Unpin + DeserializeOwned,
 >(
@@ -66,7 +66,7 @@ pub async fn get_by_id<
     }
     return (StatusCode::OK, json);
 }
-
+/// Returns all object of the generic type given in JSON format.
 pub async fn get_all<T: PayloadConstructor + Serialize + Sync + Send + Unpin + DeserializeOwned>(
 ) -> impl IntoResponse {
     let mut objects = collection::<T>().await.find(None, None).await.unwrap();
@@ -77,7 +77,7 @@ pub async fn get_all<T: PayloadConstructor + Serialize + Sync + Send + Unpin + D
     }
     return (StatusCode::OK, Json(json!({ "objects": json })));
 }
-
+/// Updates one object of the generic type.
 pub async fn update<T: PayloadConstructor + Serialize>(
     Path(id): Path<String>,
     Json(payload): Json<Value>,
@@ -107,7 +107,7 @@ pub async fn update<T: PayloadConstructor + Serialize>(
         }
     }
 }
-
+/// Removes one object of the generic type.
 pub async fn remove<T: PayloadConstructor + Serialize>(
     Path(id): Path<String>,
 ) -> impl IntoResponse {
@@ -125,7 +125,7 @@ pub async fn remove<T: PayloadConstructor + Serialize>(
     }
     return (StatusCode::OK, Json(json!({ "status": result })));
 }
-
+/// Simply returns a mongoDB ObjectId based on the passed claims. 
 async fn get_user_id(claims: jwt::Claims) -> Option<ObjectId> {
     let filter = doc! {"username": &claims.user.username, "password": &claims.user.password};
     let user = collection::<models::User>()
