@@ -9,4 +9,4 @@ This project was made to try out Axum in Rust to make a functional REST api.
 - [x] use jsonwebtokens for requests
 - [x] middleware
 - [x] a model with complex datatypes (time, lists e.g.)
-- [ ] only objects can be deleted/edited by the author
+- [x] only objects can be deleted/edited by the author
