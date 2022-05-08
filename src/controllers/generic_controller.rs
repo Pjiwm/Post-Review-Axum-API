@@ -125,7 +125,7 @@ pub async fn remove<T: PayloadConstructor + Serialize>(
     }
     return (StatusCode::OK, Json(json!({ "status": result })));
 }
-/// Simply returns a mongoDB ObjectId based on the passed claims. 
+/// Simply returns a mongoDB ObjectId based on the passed claims.
 async fn get_user_id(claims: jwt::Claims) -> Option<ObjectId> {
     let filter = doc! {"username": &claims.user.username, "password": &claims.user.password};
     let user = collection::<models::User>()
