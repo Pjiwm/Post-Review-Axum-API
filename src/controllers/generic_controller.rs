@@ -11,8 +11,14 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::vec::Vec;
+/// The Bounds trait is only for readability. Many functions require a list of trait bounds,
+/// this trait is simply a collection of all trait bounds. Instead of specifying each trait bound per function
+/// The Bounds trait can just be used
+pub trait Bounds: PayloadConstructor + Serialize + Sync + Send + Unpin + DeserializeOwned {}
+impl<T> Bounds for T where T: PayloadConstructor + Serialize + Sync + Send + Unpin + DeserializeOwned
+{}
 /// Stores new object of the generic type given.
-pub async fn create<T: PayloadConstructor + Serialize>(
+pub async fn create<T: Bounds>(
     claims: jwt::Claims,
     Json(payload): Json<Value>,
 ) -> impl IntoResponse {
@@ -44,11 +50,7 @@ pub async fn create<T: PayloadConstructor + Serialize>(
     }
 }
 /// Returns one object of the generic type given in JSON format.
-pub async fn get_by_id<
-    T: PayloadConstructor + Serialize + Sync + Send + Unpin + DeserializeOwned,
->(
-    Path(id): Path<String>,
-) -> impl IntoResponse {
+pub async fn get_by_id<T: Bounds>(Path(id): Path<String>) -> impl IntoResponse {
     let mongo_id = ObjectId::parse_str(id);
     if mongo_id.is_err() {
         return (StatusCode::NOT_FOUND, Json(json!({"error": "Not found"})));
@@ -67,8 +69,7 @@ pub async fn get_by_id<
     return (StatusCode::OK, json);
 }
 /// Returns all object of the generic type given in JSON format.
-pub async fn get_all<T: PayloadConstructor + Serialize + Sync + Send + Unpin + DeserializeOwned>(
-) -> impl IntoResponse {
+pub async fn get_all<T: Bounds>() -> impl IntoResponse {
     let mut objects = collection::<T>().await.find(None, None).await.unwrap();
     let mut json: Vec<Value> = Vec::new();
 
@@ -78,7 +79,7 @@ pub async fn get_all<T: PayloadConstructor + Serialize + Sync + Send + Unpin + D
     return (StatusCode::OK, Json(json!({ "objects": json })));
 }
 /// Updates one object of the generic type.
-pub async fn update<T: PayloadConstructor + Serialize>(
+pub async fn update<T: Bounds>(
     Path(id): Path<String>,
     Json(payload): Json<Value>,
 ) -> impl IntoResponse {
@@ -108,9 +109,7 @@ pub async fn update<T: PayloadConstructor + Serialize>(
     }
 }
 /// Removes one object of the generic type.
-pub async fn remove<T: PayloadConstructor + Serialize>(
-    Path(id): Path<String>,
-) -> impl IntoResponse {
+pub async fn remove<T: Bounds>(Path(id): Path<String>) -> impl IntoResponse {
     let mongo_id = ObjectId::parse_str(id);
     if mongo_id.is_err() {
         return (StatusCode::NOT_FOUND, Json(json!({"error": "Not found"})));
