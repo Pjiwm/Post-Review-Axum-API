@@ -1,6 +1,9 @@
-# axum-crud
-Sandbox for Axum
-This project was made to try out Axum in Rust to make a functional REST api.
+# Post Review Axum API
+Axum is a web application framework that focuses on ergonomics and modularity for Rust.
+This project was made to try out Axum in Rust to make a functional restful api.
+
+The API lets you do CRUD actions on Posts and Reviews.
+The API contains a generic controller, connection to mongoDB, authentication via jsonwebtokens and encryption for passwords.
 ## Goals for this project
 - [x] Connect to a database
 - [x] CRUD requests
