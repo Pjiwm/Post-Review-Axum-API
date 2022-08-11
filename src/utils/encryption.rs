@@ -1,8 +1,8 @@
 extern crate bcrypt;
-use bcrypt::{DEFAULT_COST, hash, verify};
+use bcrypt::{hash, verify};
 /// Hashes a string value, used for encrypted passwords.
 pub fn encrypt(s: &String) -> String {
-    hash(&s, DEFAULT_COST).unwrap()
+    hash(&s, 4).unwrap()
 }
 /// Checks if a normal string and a hashed string are the same.
 /// This is used to check if a user filled in the correct password.
