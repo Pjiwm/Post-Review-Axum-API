@@ -19,11 +19,11 @@
 	"settings": {},
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
-		"matklad.rust-analyzer",
 		"vadimcn.vscode-lldb",
-		"be5invis.toml",
 		"ms-azuretools.vscode-docker",
-		"serayuzgur.crates"
+		"bungcip.better-toml",
+		"serayuzgur.crates",
+		"rust-lang.rust-analyzer"
 	]
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
