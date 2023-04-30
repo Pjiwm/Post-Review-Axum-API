@@ -1,15 +1,17 @@
 use crate::models::PayloadConstructor;
 use crate::mongo::collection;
 use crate::utils::jwt::{self, Claims};
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Json};
 use futures::TryStreamExt;
 use mongodb::bson::ser;
 use mongodb::bson::{doc, oid::ObjectId};
+use mongodb::Database;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::{json, Value};
+use std::sync::Arc;
 use std::vec::Vec;
 
 /// The Bounds trait is only for readability. Many functions require a list of trait bounds,
@@ -21,34 +23,34 @@ impl<T> Bounds for T where T: PayloadConstructor + Serialize + Sync + Send + Unp
 
 /// Stores new object of the generic type given.
 pub async fn create<T: Bounds>(
+    State(db): State<Arc<Database>>,
     Claims { user, .. }: jwt::Claims,
-    Json(payload): Json<Value>,
+    Json(mut payload): Json<Value>,
 ) -> impl IntoResponse {
-    // Get the user id out of the claim and add it inside the paylaod.
-    let mut payload = payload;
-    let user_id = user.id;
-    if user_id.is_none() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({"error": "Could not get author id"})),
-        );
-    }
-    let user_id = user_id.unwrap();
-    payload["author_id"] = serde_json::to_value(user_id).unwrap();
-
-    let object = T::new(payload);
-    match object {
-        Ok(u) => {
-            let result = collection::<T>().await.insert_one(u, None).await.unwrap();
-            let json = Json(serde_json::to_value(&result).unwrap());
-            return (StatusCode::OK, json);
-        }
-        Err(e) => {
-            return (
+    let collection = db.collection::<T>(&T::name());
+    if let Some(user_id) = user.id {
+        payload["author_id"] = serde_json::to_value(&user_id.to_string()).unwrap_or(Value::Null);
+        let object = match T::new(payload) {
+            Ok(o) => o,
+            Err(e) => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({"error": e.to_string()})),
+                )
+            }
+        };
+        match collection.insert_one(object, None).await {
+            Ok(o) => (StatusCode::OK, Json(json!({ "result": o }))),
+            Err(e) => (
                 StatusCode::BAD_REQUEST,
                 Json(json!({"error": e.to_string()})),
-            )
+            ),
         }
+    } else {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "Could not get author id"})),
+        )
     }
 }
 /// Returns one object of the generic type given in JSON format.
