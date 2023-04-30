@@ -6,7 +6,7 @@ use axum::{body, routing::get, Router};
 use tower::ServiceBuilder;
 use tower_http::ServiceBuilderExt;
 // Router for Post objects
-pub async fn routes() -> axum::Router {
+pub fn routes() -> axum::Router {
     Router::new()
         .route(
             "/",
