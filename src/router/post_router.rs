@@ -1,12 +1,15 @@
+use std::sync::Arc;
+
 use crate::controllers::generic_controller;
 use crate::middleware::auth;
 use crate::models;
 use axum::middleware;
 use axum::{body, routing::get, Router};
+use mongodb::Database;
 use tower::ServiceBuilder;
 use tower_http::ServiceBuilderExt;
 // Router for Post objects
-pub fn routes() -> axum::Router {
+pub fn routes() -> axum::Router<Arc<Database>> {
     Router::new()
         .route(
             "/",

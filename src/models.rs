@@ -31,16 +31,6 @@ pub struct User {
     pub username: String,
     pub password: String,
 }
-impl User {
-    /// Copy trait needs to be implemented because some functions for creating json webtokens have to take ownership of the object.
-    pub fn copy(&self) -> User {
-        User {
-            username: self.username.to_owned(),
-            id: self.id,
-            password: self.password.to_owned(),
-        }
-    }
-}
 
 impl PayloadConstructor for User {
     fn new(payload: Value) -> Result<Self> {

@@ -13,9 +13,7 @@
 //!
 //! Apart from these goals, this project also succeeded into create a working generic controller.
 
-use axum::{routing::Route, Router};
-use mongodb::Database;
-use std::{env, net::SocketAddr, sync::Arc};
+use std::{env, net::SocketAddr};
 mod controllers;
 mod middleware;
 mod models;
@@ -28,21 +26,15 @@ mod utils;
 /// For the port it looks up the env var port and if it can not be found 3000 will be used.
 #[tokio::main]
 async fn main() {
+    let db = mongo::database().await;
+    let router = router::root::root_router(db);
     let port = env::var("PORT").unwrap_or(String::from("3000"));
     let addr = ["0.0.0.0:", &port].concat();
     let server: SocketAddr = addr.parse().expect("Could not parse socket address");
     if let Err(_) = axum::Server::bind(&server)
-        .serve(app().await.into_make_service())
+        .serve(router.into_make_service())
         .await
     {
         panic!("Could not start server")
     }
-}
-
-/// Returns the entire app containing all the routes of the application
-async fn app() -> axum::Router {
-    let db = Arc::new(crate::mongo::database().await);
-    Router::new()
-        .with_state(db)
-        .merge(router::root::root_router())
 }
