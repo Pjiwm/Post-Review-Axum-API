@@ -6,10 +6,16 @@ use axum::response::{IntoResponse, Json};
 use mongodb::bson::doc;
 use serde_json::{json, Value};
 /// Sample controller function using claims. When claims are not available it will just send back unauthenticated.
-pub async fn authenticate(claims: jwt::Claims) -> Result<impl IntoResponse, jwt::AuthError> {
-    let json = Json(serde_json::to_value(&claims).unwrap());
-    Ok((StatusCode::OK, json))
+pub async fn authenticate(claims: jwt::Claims) -> impl IntoResponse {
+    match serde_json::to_value(&claims) {
+        Ok(v) => (StatusCode::OK, Json(v)),
+        Err(_) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "bad claims"})),
+        ),
+    }
 }
+
 /// Gives back a jsonwebtoken if password and username in body are matching.
 /// For both registrating and logging in the passwords will be encrypted.
 pub async fn login(Json(payload): Json<Value>) -> impl IntoResponse {
@@ -65,11 +71,15 @@ pub async fn register(Json(payload): Json<Value>) -> impl IntoResponse {
     }
     let mut user = user.unwrap();
     user.password = utils::encryption::encrypt(&user.password);
-    
+
     collection::<models::User>()
-    .await
-    .insert_one(user, None)
-    .await.unwrap();
-    
-    return (StatusCode::CREATED, Json(json!({ "result": "Account created, login to receive token"})));
+        .await
+        .insert_one(user, None)
+        .await
+        .unwrap();
+
+    return (
+        StatusCode::CREATED,
+        Json(json!({ "result": "Account created, login to receive token"})),
+    );
 }

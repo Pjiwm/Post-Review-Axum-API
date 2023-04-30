@@ -1,6 +1,6 @@
-use crate::models::{self, PayloadConstructor};
+use crate::models::PayloadConstructor;
 use crate::mongo::collection;
-use crate::utils::jwt;
+use crate::utils::jwt::{self, Claims};
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Json};
@@ -11,20 +11,22 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::vec::Vec;
+
 /// The Bounds trait is only for readability. Many functions require a list of trait bounds,
 /// this trait is simply a collection of all trait bounds. Instead of specifying each trait bound per function
 /// The Bounds trait can just be used
 pub trait Bounds: PayloadConstructor + Serialize + Sync + Send + Unpin + DeserializeOwned {}
 impl<T> Bounds for T where T: PayloadConstructor + Serialize + Sync + Send + Unpin + DeserializeOwned
 {}
+
 /// Stores new object of the generic type given.
 pub async fn create<T: Bounds>(
-    claims: jwt::Claims,
+    Claims { user, .. }: jwt::Claims,
     Json(payload): Json<Value>,
 ) -> impl IntoResponse {
     // Get the user id out of the claim and add it inside the paylaod.
     let mut payload = payload;
-    let user_id = get_user_id(claims).await;
+    let user_id = user.id;
     if user_id.is_none() {
         return (
             StatusCode::BAD_REQUEST,
@@ -123,17 +125,4 @@ pub async fn remove<T: Bounds>(Path(id): Path<String>) -> impl IntoResponse {
         return (StatusCode::NOT_FOUND, Json(json!({"status": "not_found"})));
     }
     return (StatusCode::OK, Json(json!({ "status": result })));
-}
-/// Simply returns a mongoDB ObjectId based on the passed claims.
-async fn get_user_id(claims: jwt::Claims) -> Option<ObjectId> {
-    let filter = doc! {"username": &claims.user.username, "password": &claims.user.password};
-    let user = collection::<models::User>()
-        .await
-        .find_one(filter, None)
-        .await
-        .unwrap();
-    if user.is_none() {
-        return None;
-    }
-    return user.unwrap().id;
 }

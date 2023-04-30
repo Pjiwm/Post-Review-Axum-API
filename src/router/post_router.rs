@@ -6,8 +6,8 @@ use axum::{body, routing::get, Router};
 use tower::ServiceBuilder;
 use tower_http::ServiceBuilderExt;
 // Router for Post objects
-pub fn routes() -> axum::Router {
-    let router: axum::Router = Router::new()
+pub async fn routes() -> axum::Router {
+    Router::new()
         .route(
             "/",
             get(generic_controller::get_all::<models::Post>)
@@ -23,7 +23,5 @@ pub fn routes() -> axum::Router {
             ServiceBuilder::new()
                 .map_request_body(body::boxed)
                 .layer(middleware::from_fn(auth::auth)),
-        );
-
-    return router;
+        )
 }

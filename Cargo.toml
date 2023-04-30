@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = {version= "0.5.3", features = ["headers"]}
-hyper = {version = "0.14.17", features = ["full"]}
+axum = {version= "0.6.15", features = ["headers", "macros"]}
+hyper = {version = "0.14.25", features = ["full"]}
 tokio = {version = "1.17.0", features = ["full"]}
 tower = {version = "0.4.12", features = ["full"]}
 serde_json = "1.0.79"
@@ -15,8 +15,8 @@ serde = "1.0.136"
 serde_derive = "1.0.136"
 mongodb = "2.0.0"
 futures = "0.3.21"
-bcrypt = "0.12"
+bcrypt = "0.14.0"
 jsonwebtoken = "8.0"
 once_cell = "1.8"
-tower-http = { version = "0.2", features = ["map-request-body", "util"] }
+tower-http = { version = "0.4", features = ["map-request-body", "util"] }
 colored = "2"

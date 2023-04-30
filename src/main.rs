@@ -32,7 +32,7 @@ async fn main() {
     let server: SocketAddr = addr.parse().expect("Could not parse socket address");
 
     if let Err(_) = axum::Server::bind(&server)
-        .serve(app().into_make_service())
+        .serve(app().await.into_make_service())
         .await
     {
         panic!("Could not start server")
@@ -40,6 +40,6 @@ async fn main() {
 }
 
 /// Returns the entire app containing all the routes of the application
-fn app() -> axum::Router {
-    Router::new().nest("/", router::root::root_router())
+async fn app() -> axum::Router {
+    Router::new().nest("/", router::root::root_router().await)
 }
