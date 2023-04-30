@@ -20,10 +20,10 @@ pub async fn auth<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
 }
 /// Checks wheter the jsonwebtoken is valid or not
 fn token_is_valid(token: &str) -> bool {
-    let token = *token.split(" ").collect::<Vec<&str>>().get(1).unwrap();
-    let claims = utils::jwt::decode_jwt(token);
-    match claims {
-        Ok(_) => true,
-        Err(_) => false,
+    if let Some(token) = token.split(' ').collect::<Vec<&str>>().get(1) {
+        let claims = utils::jwt::decode_jwt(*token);
+        claims.is_ok()
+    } else {
+        false
     }
 }

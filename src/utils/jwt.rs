@@ -19,8 +19,7 @@ pub fn encode_user(user: models::User) -> String {
         user,
         exp: 200000000000000000,
     };
-    let str = encode(&Header::default(), &claims, &KEYS.encoding).unwrap();
-    str
+    encode(&Header::default(), &claims, &KEYS.encoding).unwrap()
 }
 /// Decodes a jsonwebtoken back to claims, if this goes wrong it will become an AuthError.
 pub fn decode_jwt(token: &str) -> Result<Claims, Response> {
@@ -61,7 +60,7 @@ pub struct Claims {
 }
 impl Display for Claims {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "user: {:?}\n", self.user)
+        writeln!(f, "user: {:?}", self.user)
     }
 }
 

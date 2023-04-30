@@ -34,8 +34,7 @@ pub struct User {
 
 impl PayloadConstructor for User {
     fn new(payload: Value) -> Result<Self> {
-        let user = serde_json::from_str(payload.to_string().as_str());
-        return user;
+        serde_json::from_str(&payload.to_string())
     }
     fn name() -> String {
         "users".to_string()
@@ -60,8 +59,7 @@ pub struct Post {
 
 impl PayloadConstructor for Post {
     fn new(payload: Value) -> Result<Self> {
-        let post = serde_json::from_str(payload.to_string().as_str());
-        return post;
+        serde_json::from_str(&payload.to_string())
     }
     fn name() -> String {
         "posts".to_string()
@@ -83,8 +81,7 @@ pub struct Review {
 
 impl PayloadConstructor for Review {
     fn new(payload: Value) -> Result<Self> {
-        let review = serde_json::from_str(payload.to_string().as_str());
-        return review;
+        serde_json::from_str(&payload.to_string())
     }
     fn name() -> String {
         "reviews".to_string()

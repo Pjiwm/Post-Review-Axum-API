@@ -29,7 +29,7 @@ pub async fn create<T: Bounds>(
 ) -> impl IntoResponse {
     let collection = db.collection::<T>(&T::name());
     if let Some(user_id) = user.id {
-        payload["author_id"] = serde_json::to_value(&user_id.to_string()).unwrap_or(Value::Null);
+        payload["author_id"] = serde_json::to_value(user_id.to_string()).unwrap_or(Value::Null);
         let object = match T::new(payload) {
             Ok(o) => o,
             Err(e) => {

@@ -26,11 +26,11 @@ pub async fn login(
     State(db): State<Arc<Database>>,
     Json(payload): Json<models::User>,
 ) -> impl IntoResponse {
-    let filter = doc! {"username": payload.username.replace("\"", "")};
+    let filter = doc! {"username": payload.username.replace('\"', "")};
     let collection = db.collection::<User>(&User::name());
     if let Ok(Some(user)) = collection.find_one(filter, None).await {
-        let pwd = &payload.password.replace("\"", "");
-        let result = if encryption::validate(&user.password, pwd) {
+        let pwd = &payload.password.replace('\"', "");
+        if encryption::validate(&user.password, pwd) {
             let jwt = jwt::encode_user(user);
             (
                 StatusCode::OK,
@@ -41,8 +41,7 @@ pub async fn login(
                 StatusCode::BAD_REQUEST,
                 Json(json!({"status": "incorrect password"})),
             )
-        };
-        result
+        }
     } else {
         (
             StatusCode::BAD_REQUEST,
@@ -64,7 +63,7 @@ pub async fn register(
         Ok(u) => {
             let mut new_user = u;
             new_user.password = utils::encryption::encrypt(&new_user.password);
-            let res = if let Ok(_) = collection.insert_one(new_user, None).await {
+            if collection.insert_one(new_user, None).await.is_ok() {
                 (
                     StatusCode::CREATED,
                     Json(json!({ "result": "Account created, login to receive token"})),
@@ -74,8 +73,7 @@ pub async fn register(
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(json!({ "error": "Could not store new user"})),
                 )
-            };
-            res
+            }
         }
         Err(e) => (
             StatusCode::BAD_REQUEST,

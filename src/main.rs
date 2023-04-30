@@ -31,9 +31,10 @@ async fn main() {
     let port = env::var("PORT").unwrap_or(String::from("3000"));
     let addr = ["0.0.0.0:", &port].concat();
     let server: SocketAddr = addr.parse().expect("Could not parse socket address");
-    if let Err(_) = axum::Server::bind(&server)
+    if (axum::Server::bind(&server)
         .serve(router.into_make_service())
-        .await
+        .await)
+        .is_err()
     {
         panic!("Could not start server")
     }
