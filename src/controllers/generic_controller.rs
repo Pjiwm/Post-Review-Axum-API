@@ -132,5 +132,5 @@ pub async fn remove<T: Bounds>(
         .delete_one(filter, None)
         .await
         .ok();
-    return (StatusCode::OK, Json(json!({ "status": result })));
+    (StatusCode::OK, Json(json!({ "status": result })))
 }

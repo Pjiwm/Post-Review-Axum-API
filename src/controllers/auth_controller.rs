@@ -11,7 +11,7 @@ use serde_json::{json, Value};
 
 /// Sample controller function using claims. When claims are not available it will just send back unauthenticated.
 pub async fn authenticate(claims: jwt::Claims) -> impl IntoResponse {
-    match serde_json::to_value(&claims) {
+    match serde_json::to_value(claims) {
         Ok(v) => (StatusCode::OK, Json(v)),
         Err(_) => (
             StatusCode::BAD_REQUEST,
