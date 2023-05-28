@@ -13,7 +13,10 @@ pub fn root_router(db: Database) -> axum::Router {
         .nest("/users", user_router::routes())
         .nest("/posts", post_router::routes())
         .nest("/reviews", review_router::routes())
-        .layer(middleware::from_fn(ownership::ownership))
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            ownership::check_owner,
+        ))
         .layer(middleware::from_fn(logging::logger))
         .with_state(state)
 }
