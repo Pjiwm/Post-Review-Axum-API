@@ -40,7 +40,7 @@ pub async fn check_owner<B>(
 
 /// Gets the user and uses a match to check on the correct model.
 async fn is_object_owner(token: &str, uri: &str, db: &Arc<Database>) -> bool {
-    let token = *token.split(" ").collect::<Vec<&str>>().get(1).unwrap();
+    let token = *token.split(' ').collect::<Vec<&str>>().get(1).unwrap();
     let claims = utils::jwt::decode_jwt(token);
     let user_id = if let Ok(c) = claims {
         if let Some(id) = c.user.id {
@@ -84,7 +84,7 @@ async fn db_lookup(collection: &Collection<Value>, object_id: &str, user_id: &st
     if let Ok(Some(object)) = object {
         println!("Object found");
         match serde_json::from_value::<ObjectId>(object["author_id"].clone()) {
-            Ok(id) => &id.to_string() == user_id,
+            Ok(id) => id.to_string() == user_id,
             Err(_) => false,
         }
     } else {
