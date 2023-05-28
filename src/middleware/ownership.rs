@@ -37,17 +37,15 @@ pub async fn check_owner<B>(
 
 /// Gets the user and uses a match to check on the correct model.
 async fn is_object_owner(token: &str, uri: &str, db: &Arc<Database>) -> bool {
-    let token = *token.split(' ').collect::<Vec<&str>>().get(1).unwrap();
+    let token = *token.split(' ').collect::<Vec<&str>>().get(1).unwrap_or(&"");
     let claims = utils::jwt::decode_jwt(token);
     let user_id = if let Ok(c) = claims {
         if let Some(id) = c.user.id {
             id.to_string()
         } else {
-            println!("No user id found in claims");
             return false;
         }
     } else {
-        println!("No claims found");
         return false;
     };
 
@@ -55,7 +53,6 @@ async fn is_object_owner(token: &str, uri: &str, db: &Arc<Database>) -> bool {
     let (model_name, object_id) = if let (Some(model_name), Some(object_id)) = search_info {
         (model_name, object_id)
     } else {
-        println!("No model name or object id found");
         return false;
     };
     let collection = db.collection::<Value>(&model_name);
@@ -73,19 +70,16 @@ async fn db_lookup(collection: &Collection<Value>, object_id: &str, user_id: &st
     let object_id = if let Ok(obj_id) = mongodb::bson::oid::ObjectId::from_str(object_id) {
         obj_id
     } else {
-        println!("Object id is not valid");
         return false;
     };
     let filter = doc! {"_id": object_id};
     let object = collection.find_one(filter, None).await;
     if let Ok(Some(object)) = object {
-        println!("Object found");
         match serde_json::from_value::<ObjectId>(object["author_id"].clone()) {
             Ok(id) => id.to_string() == user_id,
             Err(_) => false,
         }
     } else {
-        println!("Object not found");
         false
     }
 }
