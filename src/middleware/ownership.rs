@@ -33,9 +33,6 @@ pub async fn check_owner<B>(
         }
     }
     next.run(req).await
-
-    // let response = next.run(request).await;
-    // response
 }
 
 /// Gets the user and uses a match to check on the correct model.
