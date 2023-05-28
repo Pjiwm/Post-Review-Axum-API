@@ -1,23 +1,22 @@
-use std::{fmt::Debug, str::FromStr};
+use std::{str::FromStr, sync::Arc};
 
 use axum::{
-    http::{self, Request, StatusCode},
+    extract::State,
     middleware::Next,
-    response::IntoResponse,
-    Json,
+    response::{IntoResponse, Response},
 };
-use hyper::Method;
-use mongodb::bson::{doc, oid::ObjectId};
-use serde::{de::DeserializeOwned, Serialize};
+use hyper::{http, Method, Request, StatusCode};
+use mongodb::{bson::{doc, oid::ObjectId}, Collection, Database};
+use serde_json::Value;
 
-use crate::{models, utils};
-use crate::{models::PayloadConstructor, mongo::collection};
-/// Middleware for checking if the user sending the request is the owner of the requested object.
-/// It only checks on an update or delete.
-/// If the user is not logged in it will immediately give back an unauthenticated response
-/// If the user id of the requesting user doesn't match the author_id of the object,
-///  an unauthenticated response is given back as well.
-pub async fn ownership<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
+use crate::utils;
+
+pub async fn check_owner<B>(
+    State(state): State<Arc<Database>>,
+    req: Request<B>,
+    next: Next<B>,
+) -> Response {
+    let db = state;
     let auth_header = req
         .headers()
         .get(http::header::AUTHORIZATION)
@@ -26,75 +25,61 @@ pub async fn ownership<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
     if req.method() == Method::PUT || req.method() == Method::DELETE {
         match auth_header {
             Some(auth_header)
-                if is_object_owner(auth_header, req.uri().to_string().as_str()).await =>
+                if is_object_owner(auth_header, &req.uri().to_string(), &db).await =>
             {
-                return Ok(next.run(req).await)
+                return next.run(req).await
             }
-            _ => return Err(StatusCode::UNAUTHORIZED),
+            _ => return (StatusCode::UNAUTHORIZED).into_response(),
         }
     }
-    Ok(next.run(req).await)
+    next.run(req).await
 }
+
 /// Gets the user and uses a match to check on the correct model.
-async fn is_object_owner(token: &str, uri: &str) -> bool {
-    let token = *token.split(" ").collect::<Vec<&str>>().get(1).unwrap();
+async fn is_object_owner(token: &str, uri: &str, db: &Arc<Database>) -> bool {
+    let token = *token.split(' ').collect::<Vec<&str>>().get(1).unwrap_or(&"");
     let claims = utils::jwt::decode_jwt(token);
-    let user = claims.map(|c| c.user);
-    if !user.is_ok() {
+    let user_id = if let Ok(c) = claims {
+        if let Some(id) = c.user.id {
+            id.to_string()
+        } else {
+            return false;
+        }
+    } else {
         return false;
-    }
-    let user = user.unwrap();
-    let user_id = user.id.unwrap().to_string();
+    };
 
     let search_info = get_model_and_id(uri);
-    if search_info.0.is_none() || search_info.1.is_none() {
+    let (model_name, object_id) = if let (Some(model_name), Some(object_id)) = search_info {
+        (model_name, object_id)
+    } else {
         return false;
-    }
-    // check the model
-
-    match search_info.0.unwrap().as_str() {
-        "posts" => {
-            return check_from_db::<models::Post>(&search_info.1.unwrap(), &user_id).await;
-        }
-        "reviews" => {
-            return check_from_db::<models::Review>(&search_info.1.unwrap(), &user_id).await
-        }
-        _ => return false,
-    }
+    };
+    let collection = db.collection::<Value>(&model_name);
+    db_lookup(&collection, &object_id, &user_id).await
 }
-/// Gives back a tuple from parts of the uri.
-/// The function splits the total uri into pieces
-/// Based on the routes one of the uri parts is the model name
-/// the other part is the id
+
 fn get_model_and_id(uri: &str) -> (Option<String>, Option<String>) {
     let parts = uri.split('/').collect::<Vec<&str>>();
     let model_name = parts.get(1).map(|s| s.to_owned().to_owned());
     let object_id = parts.get(2).map(|s| s.to_owned().to_owned());
-    return (model_name, object_id);
+    (model_name, object_id)
 }
-/// Checks if the user_id and author_id of the object are the same
-/// When something goes wrong like something being a None value false will be returned
-/// This function grabs the object from MongoDb
-/// Then its converted to JSON, because a generic is used this is needed, with a generic the values of the object are unknown.
-/// With JSON any key can be grabbed and if it isn't there it'll just give back None.
-async fn check_from_db<
-    T: PayloadConstructor + Serialize + Sync + Send + Unpin + DeserializeOwned + Debug,
->(
-    object_id: &String,
-    user_id: &String,
-) -> bool {
-    let filter = doc! {"_id": mongodb::bson::oid::ObjectId::from_str(object_id).unwrap()};
-    let object = collection::<T>()
-        .await
-        .find_one(filter, None)
-        .await
-        .unwrap();
 
-    if object.is_none() {
+async fn db_lookup(collection: &Collection<Value>, object_id: &str, user_id: &str) -> bool {
+    let object_id = if let Ok(obj_id) = mongodb::bson::oid::ObjectId::from_str(object_id) {
+        obj_id
+    } else {
         return false;
+    };
+    let filter = doc! {"_id": object_id};
+    let object = collection.find_one(filter, None).await;
+    if let Ok(Some(object)) = object {
+        match serde_json::from_value::<ObjectId>(object["author_id"].clone()) {
+            Ok(id) => id.to_string() == user_id,
+            Err(_) => false,
+        }
+    } else {
+        false
     }
-    let json = Json(serde_json::to_value(&object).unwrap());
-    let author_obj_id = serde_json::from_value::<ObjectId>(json["author_id"].clone());
-
-    author_obj_id.unwrap().to_string().as_str() == user_id.as_str()
 }

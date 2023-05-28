@@ -1,4 +1,8 @@
-use axum::{http::Request, middleware::Next, response::IntoResponse};
+use axum::{
+    http::{HeaderValue, Request},
+    middleware::Next,
+    response::IntoResponse,
+};
 use colored::*;
 use mongodb::bson::DateTime;
 
@@ -6,8 +10,11 @@ use mongodb::bson::DateTime;
 pub async fn logger<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
     let method = req.method().to_string();
     let uri = req.uri().to_string();
-    let agent = req.headers().get("user-agent").unwrap().to_str().unwrap();
-    let host = req.headers().get("host").unwrap().to_str().unwrap();
+    let agent = header_map(
+        req.headers().get("user-agent"),
+        "Unknown User Agent".to_string(),
+    );
+    let host = header_map(req.headers().get("host"), "Unknown Host".to_string());
     println!(
         "[{}] requested {}: {} via: {} [{}]",
         host.green(),
@@ -17,4 +24,10 @@ pub async fn logger<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
         DateTime::now()
     );
     next.run(req).await
+}
+
+fn header_map(header: Option<&HeaderValue>, msg: String) -> String {
+    header
+        .map(|x| x.to_str().unwrap_or(&msg).to_string())
+        .unwrap_or(msg)
 }

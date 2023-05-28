@@ -1,75 +1,86 @@
-use crate::models::{self, PayloadConstructor};
-use crate::mongo::collection;
+use std::sync::Arc;
+
+use crate::models::{self, PayloadConstructor, User};
 use crate::utils::{self, encryption, jwt};
+use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Json};
 use mongodb::bson::doc;
+use mongodb::Database;
 use serde_json::{json, Value};
+
 /// Sample controller function using claims. When claims are not available it will just send back unauthenticated.
-pub async fn authenticate(claims: jwt::Claims) -> Result<impl IntoResponse, jwt::AuthError> {
-    let json = Json(serde_json::to_value(&claims).unwrap());
-    Ok((StatusCode::OK, json))
+pub async fn authenticate(claims: jwt::Claims) -> impl IntoResponse {
+    match serde_json::to_value(claims) {
+        Ok(v) => (StatusCode::OK, Json(v)),
+        Err(_) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "bad claims"})),
+        ),
+    }
 }
+
 /// Gives back a jsonwebtoken if password and username in body are matching.
 /// For both registrating and logging in the passwords will be encrypted.
-pub async fn login(Json(payload): Json<Value>) -> impl IntoResponse {
-    if !payload["username"].is_string() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({"status": "no username was inserted"})),
-        );
-    }
-    let filter = doc! {"username": payload["username"].to_string().replace("\"", "")};
-    let user = collection::<models::User>()
-        .await
-        .find_one(filter, None)
-        .await
-        .unwrap();
-    match &user {
-        None => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(json!({"status": "user not found"})),
+pub async fn login(
+    State(db): State<Arc<Database>>,
+    Json(payload): Json<models::User>,
+) -> impl IntoResponse {
+    let filter = doc! {"username": payload.username.replace('\"', "")};
+    let collection = db.collection::<User>(&User::name());
+    if let Ok(Some(user)) = collection.find_one(filter, None).await {
+        let pwd = &payload.password.replace('\"', "");
+        if encryption::validate(&user.password, pwd) {
+            let jwt = match jwt::encode_user(user) {
+                Ok(jwt) => jwt,
+                Err(_) => return (StatusCode::BAD_REQUEST, Json(json!({"error": "bad jwt"}))),
+            };
+            (
+                StatusCode::OK,
+                Json(json!({ "status": "logged in", "token": jwt})),
+            )
+        } else {
+            (
+                StatusCode::BAD_REQUEST,
+                Json(json!({"status": "incorrect password"})),
             )
         }
-        _ => (),
+    } else {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"status": "incorrect password"})),
+        )
     }
-    if encryption::validate(
-        &user.as_ref().unwrap().password,
-        &payload["password"].to_string().replace("\"", ""),
-    ) {
-        let jwt = jwt::encode_user(user.unwrap().copy());
-        return (
-            StatusCode::OK,
-            Json(json!({
-                "status": "logged in",
-                "token": jwt
-            })),
-        );
-    }
-    return (
-        StatusCode::BAD_REQUEST,
-        Json(json!({"status": "incorrect password"})),
-    );
 }
+
 /// Stores a new account in the database if body has been filled in correctly.
 /// The password given will be stored encrypted.
-pub async fn register(Json(payload): Json<Value>) -> impl IntoResponse {
+pub async fn register(
+    State(db): State<Arc<Database>>,
+    Json(payload): Json<Value>,
+) -> impl IntoResponse {
+    let collection = db.collection::<User>(&User::name());
     let user = models::User::new(payload);
-    if user.is_err() {
-        let err = user.unwrap_err();
-        return (
+
+    match user {
+        Ok(u) => {
+            let mut new_user = u;
+            new_user.password = utils::encryption::hash(&new_user.password);
+            if collection.insert_one(new_user, None).await.is_ok() {
+                (
+                    StatusCode::CREATED,
+                    Json(json!({ "result": "Account created, login to receive token"})),
+                )
+            } else {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Could not store new user"})),
+                )
+            }
+        }
+        Err(e) => (
             StatusCode::BAD_REQUEST,
-            Json(json!({"error": err.to_string()})),
-        );
+            Json(json!({"error": e.to_string()})),
+        ),
     }
-    let mut user = user.unwrap();
-    user.password = utils::encryption::encrypt(&user.password);
-    
-    collection::<models::User>()
-    .await
-    .insert_one(user, None)
-    .await.unwrap();
-    
-    return (StatusCode::CREATED, Json(json!({ "result": "Account created, login to receive token"})));
 }

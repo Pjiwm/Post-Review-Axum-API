@@ -1,7 +1,6 @@
 //! # Models
 //! Contains all models used for mongoDB collections and
 //! all traits required to get proper working logic.
-
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::serde_helpers::bson_datetime_as_rfc3339_string;
@@ -9,6 +8,8 @@ use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use serde_json::Value;
+use std::fmt::Debug;
+
 /// Makes it possible to use generics that implement this trait to be used inside a generic controller.
 /// The name function is used so we can attach the struct type that implements this trait to a MongoDB collection.
 pub trait PayloadConstructor {
@@ -31,21 +32,10 @@ pub struct User {
     pub username: String,
     pub password: String,
 }
-impl User {
-    /// Copy trait needs to be implemented because some functions for creating json webtokens have to take ownership of the object.
-    pub fn copy(&self) -> User {
-        User {
-            username: self.username.to_owned(),
-            id: self.id,
-            password: self.password.to_owned(),
-        }
-    }
-}
 
 impl PayloadConstructor for User {
     fn new(payload: Value) -> Result<Self> {
-        let user = serde_json::from_str(payload.to_string().as_str());
-        return user;
+        serde_json::from_str(&payload.to_string())
     }
     fn name() -> String {
         "users".to_string()
@@ -70,8 +60,7 @@ pub struct Post {
 
 impl PayloadConstructor for Post {
     fn new(payload: Value) -> Result<Self> {
-        let post = serde_json::from_str(payload.to_string().as_str());
-        return post;
+        serde_json::from_str(&payload.to_string())
     }
     fn name() -> String {
         "posts".to_string()
@@ -93,8 +82,7 @@ pub struct Review {
 
 impl PayloadConstructor for Review {
     fn new(payload: Value) -> Result<Self> {
-        let review = serde_json::from_str(payload.to_string().as_str());
-        return review;
+        serde_json::from_str(&payload.to_string())
     }
     fn name() -> String {
         "reviews".to_string()
