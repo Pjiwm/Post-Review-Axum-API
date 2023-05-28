@@ -11,15 +11,15 @@ use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation}
 use once_cell::sync::Lazy;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::fmt::Display;
+use std::{fmt::Display};
 
 /// Gives back a jsonwebtoken by building a new claim with the given user.
-pub fn encode_user(user: models::User) -> String {
+pub fn encode_user(user: models::User) -> Result<String, jsonwebtoken::errors::Error> {
     let claims = Claims {
         user,
         exp: 200000000000000000,
     };
-    encode(&Header::default(), &claims, &KEYS.encoding).unwrap()
+    encode(&Header::default(), &claims, &KEYS.encoding)
 }
 /// Decodes a jsonwebtoken back to claims, if this goes wrong it will become an AuthError.
 pub fn decode_jwt(token: &str) -> Result<Claims, Response> {

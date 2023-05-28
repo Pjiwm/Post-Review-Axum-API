@@ -31,7 +31,10 @@ pub async fn login(
     if let Ok(Some(user)) = collection.find_one(filter, None).await {
         let pwd = &payload.password.replace('\"', "");
         if encryption::validate(&user.password, pwd) {
-            let jwt = jwt::encode_user(user);
+            let jwt = match jwt::encode_user(user) {
+                Ok(jwt) => jwt,
+                Err(_) => return (StatusCode::BAD_REQUEST, Json(json!({"error": "bad jwt"}))),
+            };
             (
                 StatusCode::OK,
                 Json(json!({ "status": "logged in", "token": jwt})),
@@ -62,7 +65,7 @@ pub async fn register(
     match user {
         Ok(u) => {
             let mut new_user = u;
-            new_user.password = utils::encryption::encrypt(&new_user.password);
+            new_user.password = utils::encryption::hash(&new_user.password);
             if collection.insert_one(new_user, None).await.is_ok() {
                 (
                     StatusCode::CREATED,
