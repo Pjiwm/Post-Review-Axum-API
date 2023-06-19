@@ -1,4 +1,4 @@
-use crate::models::PayloadConstructor;
+use crate::models::Schema;
 use crate::utils::jwt::{self, Claims};
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -16,9 +16,8 @@ use std::vec::Vec;
 /// The Bounds trait is only for readability. Many functions require a list of trait bounds,
 /// this trait is simply a collection of all trait bounds. Instead of specifying each trait bound per function
 /// The Bounds trait can just be used
-pub trait Bounds: PayloadConstructor + Serialize + Sync + Send + Unpin + DeserializeOwned {}
-impl<T> Bounds for T where T: PayloadConstructor + Serialize + Sync + Send + Unpin + DeserializeOwned
-{}
+pub trait Bounds: Schema + Serialize + Sync + Send + Unpin + DeserializeOwned {}
+impl<T> Bounds for T where T: Schema + Serialize + Sync + Send + Unpin + DeserializeOwned {}
 
 /// Stores new object of the generic type given.
 pub async fn create<T: Bounds>(
@@ -63,10 +62,14 @@ pub async fn get_by_id<T: Bounds>(
         Err(_) => return (StatusCode::NOT_FOUND, Json(json!({"error": "Not found"}))),
     };
     match collection.find_one(filter, None).await {
-        Ok(Some(r)) => match serde_json::to_value(&r) {
-            Ok(v) => (StatusCode::OK, Json(v)),
-            Err(_) => (StatusCode::NOT_FOUND, Json(json!({"status": "not_found"}))),
-        },
+        Ok(Some(r)) => {
+            let v = r.populate(&db).await;
+            if v.is_null() {
+                (StatusCode::NOT_FOUND, Json(json!({"status": "not_found"})))
+            } else {
+                (StatusCode::OK, Json(v))
+            }
+        }
         _ => (StatusCode::NOT_FOUND, Json(json!({"status": "not_found"}))),
     }
 }
@@ -74,13 +77,17 @@ pub async fn get_by_id<T: Bounds>(
 pub async fn get_all<T: Bounds>(State(db): State<Arc<Database>>) -> impl IntoResponse {
     match db.collection::<T>(&T::name()).find(None, None).await {
         Ok(v) => {
-            let json: Vec<Value> = v
+            let objects: Vec<T> = v
                 .filter_map(|x| async move { x.ok() })
                 .collect::<Vec<T>>()
-                .await
-                .iter()
-                .filter_map(|x| serde_json::to_value(x).ok())
-                .collect();
+                .await;
+
+            let mut json: Vec<Value> = vec![];
+            for o in objects {
+                if let Ok(v) = serde_json::to_value(o.populate(&db).await) {
+                    json.push(v);
+                }
+            }
             (StatusCode::OK, Json(json!({ "objects": json })))
         }
         Err(_) => (StatusCode::OK, Json(json!({ "objects": [] }))),
