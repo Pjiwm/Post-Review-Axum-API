@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::models::{self, PayloadConstructor, User};
+use crate::models::{self, Schema, User};
 use crate::utils::{self, encryption, jwt};
 use axum::extract::State;
 use axum::http::StatusCode;

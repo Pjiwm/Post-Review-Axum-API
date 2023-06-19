@@ -1,10 +1,12 @@
 //! # Models
 //! Contains all models used for mongoDB collections and
 //! all traits required to get proper working logic.
+use axum::async_trait;
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::serde_helpers::bson_datetime_as_rfc3339_string;
 use mongodb::bson::DateTime;
+use mongodb::Database;
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use serde_json::Value;
@@ -12,13 +14,17 @@ use std::fmt::Debug;
 
 /// Makes it possible to use generics that implement this trait to be used inside a generic controller.
 /// The name function is used so we can attach the struct type that implements this trait to a MongoDB collection.
-pub trait PayloadConstructor {
+#[async_trait]
+pub trait Schema {
     /// Makes it easy to get the name of a struct when a Generic is used.
     fn name() -> String;
     /// The payload constructor itself, makes it possible to immediately pass JSON values to a struct object.
     fn new(payload: Value) -> Result<Self>
     where
         Self: Sized;
+    /// Populate the data,
+    /// for instance when a Model contains the ID of a different schema we want to populate the data
+    async fn populate(&self, db: &Database) -> Value;
 }
 /// User object can easily be changed to JSON or mongoDB Documents.
 /// This is because of the traits from serde Deserialize and Serialize
@@ -32,13 +38,20 @@ pub struct User {
     pub username: String,
     pub password: String,
 }
-
-impl PayloadConstructor for User {
+#[async_trait]
+impl Schema for User {
     fn new(payload: Value) -> Result<Self> {
         serde_json::from_str(&payload.to_string())
     }
     fn name() -> String {
         "users".to_string()
+    }
+
+    async fn populate(&self, _: &Database) -> Value {
+        match serde_json::to_value(self) {
+            Ok(o) => o,
+            Err(_) => Value::Null,
+        }
     }
 }
 /// User object can easily be changed to JSON or mongoDB Documents.
@@ -58,12 +71,20 @@ pub struct Post {
     pub author_id: ObjectId,
 }
 
-impl PayloadConstructor for Post {
+#[async_trait]
+impl Schema for Post {
     fn new(payload: Value) -> Result<Self> {
         serde_json::from_str(&payload.to_string())
     }
     fn name() -> String {
         "posts".to_string()
+    }
+
+    async fn populate(&self, _: &Database) -> Value {
+        match serde_json::to_value(self) {
+            Ok(o) => o,
+            Err(_) => Value::Null,
+        }
     }
 }
 /// User object can easily be changed to JSON or mongoDB Documents.
@@ -80,11 +101,28 @@ pub struct Review {
     pub author_id: ObjectId,
 }
 
-impl PayloadConstructor for Review {
+#[async_trait]
+impl Schema for Review {
     fn new(payload: Value) -> Result<Self> {
         serde_json::from_str(&payload.to_string())
     }
     fn name() -> String {
         "reviews".to_string()
+    }
+
+    async fn populate(&self, db: &Database) -> Value {
+        match serde_json::to_value(self) {
+            Ok(mut value) => {
+                let post_coll = db.collection::<Post>(&Post::name());
+                match post_coll.find_one(doc! {"_id": self.post}, None).await {
+                    Ok(Some(post)) => {
+                        value["post"] = post.populate(&db).await;
+                        value
+                    }
+                    _ => Value::Null,
+                }
+            }
+            Err(_) => Value::Null,
+        }
     }
 }
